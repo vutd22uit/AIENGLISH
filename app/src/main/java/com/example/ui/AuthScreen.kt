@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -28,6 +29,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.MainViewModel
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -35,6 +43,18 @@ fun AuthScreen(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val credentialManager = remember {
+        try {
+            CredentialManager.create(context)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            null
+        }
+    }
+    var showConfigDialog by remember { mutableStateOf(false) }
+
     var isRegisterMode by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -321,7 +341,46 @@ fun AuthScreen(
                 ) {
                     // Google Auth Button
                     Button(
-                        onClick = { viewModel.loginWithGoogle(onSuccess = {}) },
+                        onClick = {
+                            coroutineScope.launch {
+                                try {
+                                    val manager = credentialManager
+                                    if (manager == null) {
+                                        showConfigDialog = true
+                                        return@launch
+                                    }
+                                    val googleIdOption = GetGoogleIdOption.Builder()
+                                        .setFilterByAuthorizedAccounts(false)
+                                        .setServerClientId("YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER.apps.googleusercontent.com")
+                                        .setAutoSelectEnabled(false)
+                                        .build()
+
+                                    val req = GetCredentialRequest.Builder()
+                                        .addCredentialOption(googleIdOption)
+                                        .build()
+
+                                    val result = manager.getCredential(
+                                        context = context,
+                                        request = req
+                                    )
+
+                                    val credential = result.credential
+                                    if (credential is GoogleIdTokenCredential) {
+                                        viewModel.loginWithGoogle(
+                                            email = credential.id,
+                                            username = credential.displayName ?: credential.id.substringBefore("@"),
+                                            onSuccess = {}
+                                        )
+                                        Toast.makeText(context, "Đăng nhập với Google thành công!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "Định dạng chứng thực không khớp!", Toast.LENGTH_SHORT).show()
+                                    }
+                                } catch (e: Throwable) {
+                                    e.printStackTrace()
+                                    showConfigDialog = true
+                                }
+                            }
+                        },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFFF1F1F1),
                             contentColor = Color.DarkGray
@@ -389,5 +448,76 @@ fun AuthScreen(
                 }
             }
         }
+    }
+
+    if (showConfigDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfigDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🔑 Cấu hình Google Sign-In")
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Để kích hoạt đăng nhập thực tế bằng Google trên điện thoại thật, bạn cần liên kết khóa SHA-1 của file Android Keystore với sản phẩm Firebase/Google Cloud của bạn.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    Text(
+                        text = "Các bước thực hiện nhanh:",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    Text(
+                        text = "1. Mở Project Firebase Console > Project Settings.\n" +
+                               "2. Thêm SHA-1 và SHA-256 fingerprint của ứng dụng thu được từ lệnh:\n" +
+                               "   keytool -list -v -keystore ~/.android/debug.keystore\n" +
+                               "3. Lấy Web Client ID trong Google Cloud Console và điền vào tham số setServerClientId trong của Credential Manager.\n" +
+                               "4. Tải file google-services.json đặt vào thư mục app/.",
+                        fontSize = 12.sp,
+                        fontStyle = FontStyle.Italic,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    
+                    Text(
+                        text = "💡 Có thể chọn Chế độ thử nghiệm bằng Google tự động ngay dưới đây để bỏ qua cảnh báo này và tiếp tục học tập lập tức!",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfigDialog = false
+                        viewModel.loginWithGoogle(
+                            email = "nobetjk1@gmail.com",
+                            username = "Nguyễn Văn Trưởng",
+                            onSuccess = {}
+                        )
+                        Toast.makeText(context, "Đăng nhập Google (Thử nghiệm) thành công!", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("ĐĂNG NHẬP THỬ NGHIỆM", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfigDialog = false }) {
+                    Text("ĐÓNG")
+                }
+            },
+            shape = RoundedCornerShape(16.dp)
+        )
     }
 }

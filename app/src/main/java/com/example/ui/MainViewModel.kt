@@ -107,13 +107,13 @@ class MainViewModel(private val repository: AppRepository) : ViewModel() {
         }
     }
 
-    fun loginWithGoogle(onSuccess: () -> Unit) {
+    fun loginWithGoogle(email: String = "nobetjk1@gmail.com", username: String = "Nguyễn Văn Trưởng", onSuccess: () -> Unit) {
         viewModelScope.launch {
             repository.updateProgress { current ->
                 current.copy(
                     isLoggedIn = true,
-                    email = "nobetjk1@gmail.com",
-                    username = "Nguyễn Văn Trưởng",
+                    email = email,
+                    username = username.ifEmpty { email.substringBefore("@") },
                     loginProvider = "google"
                 )
             }
@@ -162,6 +162,22 @@ class MainViewModel(private val repository: AppRepository) : ViewModel() {
 
     fun closeWordPopup() {
         _selectedWordDetails.value = null
+    }
+
+    fun addMinutesStudied(minutes: Int) {
+        viewModelScope.launch {
+            repository.updateProgress { current ->
+                current.copy(minutesStudied = current.minutesStudied + minutes)
+            }
+        }
+    }
+
+    fun incrementWordsLearned(amount: Int) {
+        viewModelScope.launch {
+            repository.updateProgress { current ->
+                current.copy(totalWordsLearned = current.totalWordsLearned + amount)
+            }
+        }
     }
 
     private suspend fun updateDailyActivity() {

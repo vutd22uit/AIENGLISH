@@ -40,6 +40,7 @@ import com.example.data.*
 import com.example.ui.MainViewModel
 import com.example.ui.MainViewModelFactory
 import com.example.ui.AuthScreen
+import com.example.ui.ToeicScreen
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -98,7 +99,8 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                     0 -> LearnTabScreen(viewModel = viewModel)
                     1 -> ChatTabScreen(viewModel = viewModel)
                     2 -> FlashcardsTabScreen(viewModel = viewModel)
-                    3 -> ProgressTabScreen(
+                    3 -> ToeicScreen(viewModel = viewModel)
+                    4 -> ProgressTabScreen(
                         viewModel = viewModel,
                         onStartQuiz = { showQuizDialog = true }
                     )
@@ -150,6 +152,12 @@ fun CustomBottomNavigationBar(selectedTab: Int, onTabSelect: (Int) -> Unit) {
         NavigationBarItem(
             selected = selectedTab == 3,
             onClick = { onTabSelect(3) },
+            label = { Text("Luyện TOEIC") },
+            icon = { Icon(Icons.Default.PlayArrow, contentDescription = "Luyện thi TOEIC") }
+        )
+        NavigationBarItem(
+            selected = selectedTab == 4,
+            onClick = { onTabSelect(4) },
             label = { Text("Tiến Trình") },
             icon = { Icon(Icons.Default.Check, contentDescription = "Thống kê") }
         )
