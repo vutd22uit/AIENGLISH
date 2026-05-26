@@ -78,6 +78,76 @@ class MainViewModel(private val repository: AppRepository) : ViewModel() {
         _currentTab.value = tab
     }
 
+    // --- Auth Actions ---
+    fun loginWithEmail(email: String, name: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            repository.updateProgress { current ->
+                current.copy(
+                    isLoggedIn = true,
+                    email = email,
+                    username = name.ifEmpty { email.substringBefore("@") },
+                    loginProvider = "email"
+                )
+            }
+            onSuccess()
+        }
+    }
+
+    fun signupWithEmail(username: String, email: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            repository.updateProgress { current ->
+                current.copy(
+                    isLoggedIn = true,
+                    email = email,
+                    username = username,
+                    loginProvider = "email"
+                )
+            }
+            onSuccess()
+        }
+    }
+
+    fun loginWithGoogle(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            repository.updateProgress { current ->
+                current.copy(
+                    isLoggedIn = true,
+                    email = "nobetjk1@gmail.com",
+                    username = "Nguyễn Văn Trưởng",
+                    loginProvider = "google"
+                )
+            }
+            onSuccess()
+        }
+    }
+
+    fun loginWithFacebook(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            repository.updateProgress { current ->
+                current.copy(
+                    isLoggedIn = true,
+                    email = "vutruongdoan@facebook.com",
+                    username = "Đoàn Vũ Trường",
+                    loginProvider = "facebook"
+                )
+            }
+            onSuccess()
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            repository.updateProgress { current ->
+                current.copy(
+                    isLoggedIn = false,
+                    email = "",
+                    username = "",
+                    loginProvider = ""
+                )
+            }
+        }
+    }
+
     fun selectArticle(article: Article?) {
         _selectedArticle.value = article
         if (article != null) {

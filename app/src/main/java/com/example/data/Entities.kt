@@ -43,5 +43,9 @@ data class UserProgress(
     val streak: Int = 0,
     val lastActiveTimeMillis: Long = 0L,
     val totalWordsLearned: Int = 0,
-    val minutesStudied: Int = 0
+    val minutesStudied: Int = 0,
+    val isLoggedIn: Boolean = false,
+    val username: String = "",
+    val email: String = "",
+    val loginProvider: String = "" // "email", "google", "facebook"
 )
